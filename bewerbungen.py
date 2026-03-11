@@ -117,6 +117,10 @@ def load_data() -> pd.DataFrame:
         return pd.DataFrame(columns=SPALTEN)
     df = pd.DataFrame(alle_werte[1:], columns=alle_werte[0])
     df = df[df.apply(lambda r: any(str(v).strip() for v in r), axis=1)].copy()
+    # Fehlende Spalten (z.B. nach Updates) leer auffüllen
+    for col in SPALTEN:
+        if col not in df.columns:
+            df[col] = ""
     df["_row"] = range(2, len(df) + 2)
     return df
 
