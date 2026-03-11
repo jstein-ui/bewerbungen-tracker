@@ -50,20 +50,23 @@ STATUS_FARBEN = {
 
 SPALTEN = [
     "Datum", "Firma", "Stelle", "Ort", "Quelle",
-    "Status", "Nächster Schritt", "Wiedervorlage", "Notiz"
+    "Status", "Gehaltsvorstellung", "Nächster Schritt", "Wiedervorlage", "Notiz"
 ]
 
-# ── Dein Profil (fest hinterlegt für den KI-Generator) ────────
+# ── Dein Profil ───────────────────────────────────────────────
 PROFIL = {
     "name":        "Jens Stein",
     "adresse":     "La-Roche-Str. 53, 44629 Herne",
-    "telefon":     "",   # hier eintragen
-    "email":       "",   # hier eintragen
-    "erfahrung":   "20+ Jahre im technischen Großhandel (METRO/Knust Herne)",
-    "skills":      "Power Query (M-Code), Power BI, VBA, ETL-Pipelines, ERP-Systeme (Steps, SAP), Master Data Management",
-    "staerken":    "Ich verbinde operative Handelserfahrung mit modernen Daten-Tools. Ich habe eigenständig eine automatisierte ETL-Pipeline sowie ein mehrseitiges Power BI Dashboard entwickelt.",
-    "zielregion":  "Ruhrgebiet",
-    "zielrollen":  "Data Analyst, Business Analyst, Supply Chain Analyst, MDM-Spezialist",
+    "telefon":     "0176-43239370",
+    "email":       "J.stein2802@gmail.com",
+    "linkedin":    "https://www.linkedin.com/in/jens-stein-/",
+    "erfahrung":   "20+ Jahre Erfahrung im Großhandel (METRO Deutschland GmbH) — Supply Chain, Stammdaten, Einkauf",
+    "skills":      "SAP-basierte Systeme, MS Excel (Power Query, Pivot), Power BI, ETL-Pipelines, Stammdatenmanagement, JDA, ERP",
+    "staerken":    "Verbinde operative Handelserfahrung mit modernen Daten-Tools. Eigenständige Entwicklung von ETL-Systemen und Power BI Dashboards.",
+    "verfuegbar":  "Ab sofort",
+    "gehalt":      "ab 55.000 € brutto p.a. (je nach Position)",
+    "zielregion":  "Ruhrgebiet | Homeoffice möglich",
+    "zielrollen":  "Stammdatenmanagement, Supply Chain Analyst, Data Analyst, Business Analyst",
 }
 
 # ═══════════════════════════════════════════════════════════════
@@ -117,11 +120,11 @@ def load_data() -> pd.DataFrame:
     df["_row"] = range(2, len(df) + 2)
     return df
 
-def save_row(datum, firma, stelle, ort, quelle, status,
+def save_row(datum, firma, stelle, ort, quelle, status, gehalt_v,
              naechster, wiedervorlage, notiz):
     ws = get_worksheet()
     ws.append_row([
-        str(datum), firma, stelle, ort, quelle, status,
+        str(datum), firma, stelle, ort, quelle, status, gehalt_v,
         naechster,
         str(wiedervorlage) if wiedervorlage else "",
         notiz,
@@ -140,6 +143,115 @@ def deutschen_monat(d):
     for en, de in monate.items():
         s = s.replace(en, de)
     return s
+
+
+def make_eigenbemuehungen_pdf(df: pd.DataFrame) -> bytes:
+    """Schlichter Nachweis Eigenbemühungen für die Agentur für Arbeit."""
+    from reportlab.pdfgen import canvas as rl_canvas
+    buf  = io.BytesIO()
+    W, H = A4
+    c    = rl_canvas.Canvas(buf, pagesize=A4)
+    BLAU = HexColor("#1f4e79")
+    HELL = HexColor("#f0f4f8")
+    GRAU = HexColor("#666666")
+    WEISS = HexColor("#ffffff")
+
+    def header():
+        # Titel
+        c.setFillColor(BLAU)
+        c.setFont(PDF_FONT_BOLD, 14)
+        c.drawString(20*mm, H-20*mm, "Nachweis Eigenbemühungen")
+        c.setStrokeColor(BLAU)
+        c.setLineWidth(1)
+        c.line(20*mm, H-23*mm, W-20*mm, H-23*mm)
+
+        # Kontaktdaten
+        c.setFillColor(HexColor("#1a1a2e"))
+        c.setFont(PDF_FONT_BOLD, 10)
+        c.drawString(20*mm, H-30*mm, PROFIL["name"])
+        c.setFont(PDF_FONT, 9)
+        c.drawString(20*mm, H-36*mm,
+            f"{PROFIL['adresse']}  |  {PROFIL['telefon']}  |  {PROFIL['email']}")
+
+        # Datum rechts
+        c.setFont(PDF_FONT, 9)
+        c.setFillColor(GRAU)
+        c.drawRightString(W-20*mm, H-30*mm,
+            f"Stand: {date.today().strftime('%d.%m.%Y')}")
+        c.drawRightString(W-20*mm, H-36*mm,
+            f"Anzahl Bewerbungen: {len(df)}")
+
+    header()
+
+    # Tabellenkopf
+    y = H - 48*mm
+    c.setFillColor(BLAU)
+    c.rect(20*mm, y-5*mm, W-40*mm, 10*mm, fill=1, stroke=0)
+    c.setFillColor(WEISS)
+    c.setFont(PDF_FONT_BOLD, 9)
+    c.drawString(22*mm,  y, "Nr.")
+    c.drawString(32*mm,  y, "Datum")
+    c.drawString(55*mm,  y, "Firma / Unternehmen")
+    c.drawString(105*mm, y, "Stelle / Position")
+    c.drawString(153*mm, y, "Quelle")
+    c.drawString(175*mm, y, "Status")
+    y -= 12*mm
+
+    for i, (_, row) in enumerate(df.iterrows()):
+        if y < 28*mm:
+            # Footer
+            c.setFillColor(GRAU)
+            c.setFont(PDF_FONT, 7)
+            c.drawString(20*mm, 18*mm,
+                "Dieser Nachweis wurde maschinell erstellt.")
+            c.drawRightString(W-20*mm, 18*mm,
+                f"Seite 1")
+            c.showPage()
+            header()
+            y = H - 48*mm
+            # Kopf wiederholen
+            c.setFillColor(BLAU)
+            c.rect(20*mm, y-5*mm, W-40*mm, 10*mm, fill=1, stroke=0)
+            c.setFillColor(WEISS)
+            c.setFont(PDF_FONT_BOLD, 9)
+            c.drawString(22*mm, y, "Nr.")
+            c.drawString(32*mm, y, "Datum")
+            c.drawString(55*mm, y, "Firma / Unternehmen")
+            c.drawString(105*mm, y, "Stelle / Position")
+            c.drawString(153*mm, y, "Quelle")
+            c.drawString(175*mm, y, "Status")
+            y -= 12*mm
+
+        # Zebrastreifen
+        if i % 2 == 0:
+            c.setFillColor(HELL)
+            c.rect(20*mm, y-3*mm, W-40*mm, 8*mm, fill=1, stroke=0)
+
+        c.setFillColor(HexColor("#1a1a2e"))
+        c.setFont(PDF_FONT, 9)
+        c.drawString(22*mm,  y, str(i+1))
+        c.drawString(32*mm,  y, str(row.get("Datum",""))[:10])
+        c.drawString(55*mm,  y, str(row.get("Firma",""))[:25])
+        c.drawString(105*mm, y, str(row.get("Stelle",""))[:24])
+        c.drawString(153*mm, y, str(row.get("Quelle",""))[:10])
+
+        status = str(row.get("Status",""))
+        farbe  = STATUS_FARBEN.get(status, "#8B949E")
+        c.setFillColor(HexColor(farbe))
+        c.roundRect(174*mm, y-2*mm, 16*mm, 6*mm, 1*mm, fill=1, stroke=0)
+        c.setFillColor(WEISS)
+        c.setFont(PDF_FONT_BOLD, 6)
+        c.drawCentredString(182*mm, y, status[:12])
+
+        y -= 9*mm
+
+    # Footer
+    c.setFillColor(GRAU)
+    c.setFont(PDF_FONT, 7)
+    c.drawString(20*mm, 18*mm,
+        "Dieser Nachweis wurde maschinell erstellt.")
+    c.save()
+    return buf.getvalue()
 
 def make_agentur_pdf(df: pd.DataFrame,
                      verfuegbar: str,
@@ -386,7 +498,7 @@ if seite == "📊 Übersicht":
     st.title("💼 Bewerbungs-Tracker")
 
     if not hat_daten:
-        st.info("Noch keine Bewerbungen. Starte mit '✍️ Anschreiben generieren' oder '➕ Bewerbung erfassen'.")
+        st.info("Noch keine Bewerbungen. Starte mit '➕ Bewerbung erfassen'.")
     else:
         aktiv    = len(df[~df["Status"].isin(["Absage","Zurückgezogen"])])
         gesprche = len(df[df["Status"].isin(["Gespräch geplant","Gespräch geführt"])])
@@ -417,49 +529,24 @@ if seite == "📊 Übersicht":
             return f'<span style="background:{f};color:#fff;padding:2px 10px;border-radius:10px;font-size:0.8em;white-space:nowrap">{s}</span>'
 
         anzeige = df_f[["Datum","Firma","Stelle","Ort","Quelle",
-                         "Status","Nächster Schritt","Wiedervorlage"]].copy()
+                         "Status","Gehaltsvorstellung","Nächster Schritt","Wiedervorlage"]].copy()
         anzeige["Status"] = anzeige["Status"].apply(badge)
         st.markdown(anzeige.to_html(escape=False, index=False), unsafe_allow_html=True)
 
         st.divider()
-        st.subheader("📤 Agentur-Statusbericht")
-        st.caption("Einmal ausfüllen — fertige PDF für die Agentur")
+        st.divider()
+        st.subheader("📤 Nachweis Eigenbemühungen")
+        st.caption("Für die Agentur für Arbeit — einmal drücken, fertig")
 
-        with st.form("agentur_pdf"):
-            ca, cb = st.columns(2)
-            verfuegbar = ca.text_input(
-                "Verfügbar ab",
-                placeholder="z.B. 01.05.2025 oder sofort",
-                value="Nach Absprache")
-            gehalt = ca.text_input(
-                "Gehaltsvorstellung (brutto/Jahr)",
-                placeholder="z.B. 55.000 – 65.000 €")
-            zielrollen = cb.text_input(
-                "Zielrollen",
-                value=PROFIL["zielrollen"],
-                placeholder="z.B. Data Analyst, Business Analyst")
-            region = cb.text_input(
-                "Region / Pendelbereitschaft",
-                value="Ruhrgebiet | Homeoffice möglich")
-            anmerkung = st.text_area(
-                "Anmerkungen für die Agentur (optional)",
-                placeholder="z.B. Präferenz für Festanstellung, keine Zeitarbeit",
-                height=60)
-
-            pdf_ok = st.form_submit_button(
-                "📄 Agentur-PDF erstellen", use_container_width=True, type="primary")
-
-        if pdf_ok:
-            pdf_bytes = make_agentur_pdf(
-                df_f, verfuegbar, gehalt, zielrollen, region, anmerkung)
-            st.download_button(
-                label="⬇️ PDF herunterladen & versenden",
-                data=pdf_bytes,
-                file_name=f"Bewerbungsstatus_{PROFIL['name'].replace(' ','_')}_{date.today()}.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-            )
-            st.success("✅ PDF ist bereit — einfach herunterladen und per Mail an die Agentur schicken.")
+        pdf_bytes = make_eigenbemuehungen_pdf(df_f)
+        st.download_button(
+            label="📄 Nachweis Eigenbemühungen als PDF",
+            data=pdf_bytes,
+            file_name=f"Nachweis_Eigenbemuehungen_{date.today()}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
+        st.caption("PDF per Mail einreichen oder ausdrucken.")
 
 # ═══════════════════════════════════════════════════════════════
 # ── SEITE 2: BEWERBUNG ERFASSEN
@@ -478,6 +565,11 @@ elif seite == "➕ Bewerbung erfassen":
         with c2:
             datum        = st.date_input("Datum", value=date.today())
             status       = st.selectbox("Status", list(STATUS_FARBEN.keys()))
+            gehalt_v     = st.text_input(
+                                "Gehaltsvorstellung",
+                                placeholder="z.B. 55.000 € / 60.000 €",
+                                value=PROFIL["gehalt"],
+                                help="Kann je nach Stelle angepasst werden")
             naechster    = st.text_input("Nächster Schritt",
                                           placeholder="z.B. Auf Rückmeldung warten")
             wiedervorlage = st.date_input("Wiedervorlage (optional)", value=None)
@@ -490,7 +582,7 @@ elif seite == "➕ Bewerbung erfassen":
             else:
                 try:
                     save_row(datum, firma, stelle, ort, quelle,
-                             status, naechster, wiedervorlage, notiz)
+                             status, gehalt_v, naechster, wiedervorlage, notiz)
                     st.success(f"✅ {firma} — {stelle} gespeichert!")
                     st.balloons()
                 except Exception as e:
