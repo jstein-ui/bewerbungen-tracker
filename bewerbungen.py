@@ -627,6 +627,10 @@ elif seite == "✏️ Status ändern":
                 index=list(STATUS_FARBEN.keys()).index(row["Status"])
                       if row["Status"] in STATUS_FARBEN else 0
             )
+            neues_gehalt = st.text_input(
+                "Gehaltsvorstellung",
+                value=str(row.get("Gehaltsvorstellung", "")),
+                placeholder="z.B. 55.000 € / 60.000 €")
             neuer_schritt = st.text_input(
                 "Nächster Schritt",
                 value=str(row.get("Nächster Schritt", "")))
@@ -639,9 +643,10 @@ elif seite == "✏️ Status ändern":
                 try:
                     ws      = get_worksheet()
                     row_idx = int(row["_row"])
-                    ws.update_cell(row_idx, SPALTEN.index("Status") + 1,         neuer_status)
-                    ws.update_cell(row_idx, SPALTEN.index("Nächster Schritt") + 1, neuer_schritt)
-                    ws.update_cell(row_idx, SPALTEN.index("Notiz") + 1,           neue_notiz)
+                    ws.update_cell(row_idx, SPALTEN.index("Status") + 1,            neuer_status)
+                    ws.update_cell(row_idx, SPALTEN.index("Gehaltsvorstellung") + 1, neues_gehalt)
+                    ws.update_cell(row_idx, SPALTEN.index("Nächster Schritt") + 1,  neuer_schritt)
+                    ws.update_cell(row_idx, SPALTEN.index("Notiz") + 1,             neue_notiz)
                     load_data.clear()
                     st.success(f"✅ {row['Firma']} → {neuer_status}")
                     st.rerun()
