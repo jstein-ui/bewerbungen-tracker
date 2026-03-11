@@ -274,7 +274,7 @@ if seite == "📊 Übersicht":
         angebote   = len(df[df["Status"] == "Angebot erhalten"])
         absagen    = len(df[df["Status"] == "Absage"])
         rueckm     = len(df[df["Status"].isin([
-            "Rückmeldung","Gespräch geplant","Gespräch geführt","Angebot erhalten"])])
+            "Rückmeldung","Gespräch geplant","Gespräch geführt","Angebot erhalten","Absage"])])
         absage_quote = round(absagen / len(df) * 100) if len(df) else 0
         rueckm_quote = round(rueckm  / len(df) * 100) if len(df) else 0
 
@@ -315,7 +315,9 @@ if seite == "📊 Übersicht":
 
         # Tabelle
         df_f = df[df["Status"].isin(filter_status)].copy() if filter_status else df.copy()
-        df_f = df_f.drop(columns=["_row","_dp"], errors="ignore")
+        df_f["_sort"] = df_f["Datum"].apply(parse_datum)
+        df_f = df_f.sort_values("_sort", ascending=False, na_position="last")
+        df_f = df_f.drop(columns=["_row","_dp","_sort"], errors="ignore")
 
         anzeige = df_f[["Datum","Firma","Stelle","Ort","Quelle",
                          "Status","Gehaltsvorstellung","Nächster Schritt","Wiedervorlage"]].copy()
