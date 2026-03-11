@@ -106,13 +106,13 @@ def get_worksheet():
         ws = sh.worksheet(WORKSHEET_NAME)
     except gspread.WorksheetNotFound:
         ws = sh.add_worksheet(title=WORKSHEET_NAME, rows=500, cols=len(SPALTEN))
-        ws.update("R1C1", [SPALTEN])
+        ws.update([SPALTEN], "A1")
         return ws
     # Spaltenanzahl anpassen falls nötig
     if ws.col_count < len(SPALTEN):
         ws.resize(rows=ws.row_count, cols=len(SPALTEN))
     # Kopfzeile immer exakt auf SPALTEN setzen
-    ws.update("R1C1", [SPALTEN])
+    ws.update([SPALTEN], "A1")
     return ws
 
 @st.cache_data(ttl=30)
