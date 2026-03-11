@@ -202,9 +202,9 @@ def make_eigenbemuehungen_pdf(df: pd.DataFrame) -> bytes:
     c.drawString(22*mm,  y, "Nr.")
     c.drawString(32*mm,  y, "Datum")
     c.drawString(55*mm,  y, "Firma / Unternehmen")
-    c.drawString(105*mm, y, "Stelle / Position")
-    c.drawString(153*mm, y, "Quelle")
-    c.drawString(175*mm, y, "Status")
+    c.drawString(100*mm, y, "Stelle / Position")
+    c.drawString(155*mm, y, "Quelle")
+    c.drawString(173*mm, y, "Status")
     y -= 12*mm
 
     for i, (_, row) in enumerate(df.iterrows()):
@@ -241,17 +241,17 @@ def make_eigenbemuehungen_pdf(df: pd.DataFrame) -> bytes:
         c.setFont(PDF_FONT, 9)
         c.drawString(22*mm,  y, str(i+1))
         c.drawString(32*mm,  y, str(row.get("Datum",""))[:10])
-        c.drawString(55*mm,  y, str(row.get("Firma",""))[:25])
-        c.drawString(105*mm, y, str(row.get("Stelle",""))[:24])
-        c.drawString(153*mm, y, str(row.get("Quelle",""))[:10])
+        c.drawString(55*mm,  y, str(row.get("Firma",""))[:23])
+        c.drawString(100*mm, y, str(row.get("Stelle",""))[:32])
+        c.drawString(155*mm, y, str(row.get("Quelle",""))[:9])
 
         status = str(row.get("Status",""))
         farbe  = STATUS_FARBEN.get(status, "#8B949E")
         c.setFillColor(HexColor(farbe))
-        c.roundRect(174*mm, y-2*mm, 16*mm, 6*mm, 1*mm, fill=1, stroke=0)
+        c.roundRect(172*mm, y-2*mm, 18*mm, 6*mm, 1*mm, fill=1, stroke=0)
         c.setFillColor(WEISS)
         c.setFont(PDF_FONT_BOLD, 6)
-        c.drawCentredString(182*mm, y, status[:12])
+        c.drawCentredString(181*mm, y, status[:14])
 
         y -= 9*mm
 
