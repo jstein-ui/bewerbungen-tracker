@@ -107,6 +107,15 @@ def get_worksheet():
     except gspread.WorksheetNotFound:
         ws = sh.add_worksheet(title=WORKSHEET_NAME, rows=500, cols=len(SPALTEN))
         ws.append_row(SPALTEN)
+        return ws
+    # Sheet auf genug Spalten erweitern falls nötig
+    if ws.col_count < len(SPALTEN):
+        ws.resize(rows=ws.row_count, cols=len(SPALTEN))
+    # Kopfzeile prüfen und fehlende Spalten ergänzen
+    header = ws.row_values(1)
+    for i, col in enumerate(SPALTEN):
+        if col not in header:
+            ws.update_cell(1, i + 1, col)
     return ws
 
 @st.cache_data(ttl=30)
